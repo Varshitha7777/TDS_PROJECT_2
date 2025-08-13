@@ -1,0 +1,14 @@
+Data File Path: uploads/285400c3-a9a2-41b0-8492-1a3ca46cd99d/data.csv\n\nDataFrame Info:\n<class 'pandas.core.frame.DataFrame'>
+Index: 0 entries
+Data columns (total 4 columns):
+ #   Column           Non-Null Count  Dtype  
+---  ------           --------------  -----  
+ 0   Rank             0 non-null      float64
+ 1   Worldwide gross  0 non-null      float64
+ 2   Year             0 non-null      int64  
+ 3   Peak             0 non-null      float64
+dtypes: float64(3), int64(1)
+memory usage: 0.0 bytes
+\n\nColumn Names:\n['Rank', 'Worldwide gross', 'Year', 'Peak']\n\nFirst 5 Rows:\nEmpty DataFrame
+Columns: [Rank, Worldwide gross, Year, Peak]
+Index: []\n\nANSWER_FORMAT: JSON array of strings\n

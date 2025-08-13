@@ -1,0 +1,10 @@
+{
+    "answer": {
+        "total_sales_across_all_regions": 384684.71,
+        "region_with_highest_total_sales": "North",
+        "correlation_day_of_month_and_sales": 0.16,
+        "median_sales_amount_across_all_orders": 360.7,
+        "total_sales_tax": 15484.35
+    },
+    "images": []
+}

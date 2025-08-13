@@ -1,0 +1,442 @@
+
+[2025-08-13 20:16:34]
+📜 Executing Code:
+import pandas as pd
+import requests
+import os
+import io
+
+# Create the directory if it doesn't exist
+output_dir = "uploads/a8a217cf-4169-420e-8db8-48a10a25e4ba"
+os.makedirs(output_dir, exist_ok=True)
+
+# Define file paths
+data_file_path = os.path.join(output_dir, "data.csv")
+metadata_file_path = os.path.join(output_dir, "metadata.txt")
+
+# URL to scrape
+url = "https://en.wikipedia.org/wiki/List_of_highest-grossing_films"
+
+# Fetch HTML content
+response = requests.get(url)
+response.raise_for_status()  # Raise an exception for HTTP errors
+
+# Read HTML tables into a list of DataFrames
+tables = pd.read_html(response.text)
+
+# The main table of highest-grossing films is usually the first or second one.
+# Find the table with 'Film' and 'Worldwide gross' columns.
+df = None
+for table in tables:
+    if "Film" in table.columns and "Worldwide gross" in table.columns:
+        df = table
+        break
+
+if df is None:
+    raise ValueError("Could not find the expected table on the Wikipedia page.")
+
+# Rename 'Worldwide gross' for easier access
+df = df.rename(columns={"Worldwide gross": "Worldwide_gross"})
+
+# Clean 'Rank' column: extract numeric part from potential footnotes/superscripts
+df["Rank"] = df["Rank"].astype(str).str.extract(r"^(\d+)", expand=False)
+df["Rank"] = pd.to_numeric(df["Rank"], errors="coerce")
+
+# Clean 'Worldwide_gross' column: remove '$', ',', and bracketed notes like '[1]', then convert to numeric
+df["Worldwide_gross"] = (
+    df["Worldwide_gross"]
+    .astype(str)
+    .str.replace("$", "", regex=False)
+    .str.replace(",", "", regex=False)
+    .str.replace(r"\[.*?\]", "", regex=True)
+    .str.strip()
+)
+df["Worldwide_gross"] = pd.to_numeric(df["Worldwide_gross"], errors="coerce")
+
+# Clean 'Year' column: extract the first four digits, convert to numeric
+df["Year"] = df["Year"].astype(str).str.extract(r"(\d{4})", expand=False)
+df["Year"] = pd.to_numeric(df["Year"], errors="coerce")
+
+# Drop rows with NaN in critical columns after cleaning
+df.dropna(subset=["Rank", "Film", "Worldwide_gross", "Year"], inplace=True)
+
+# Select final columns for the dataset
+# Ensure 'Rank', 'Film', 'Worldwide_gross', 'Year' are present.
+final_df = df[["Rank", "Film", "Worldwide_gross", "Year"]].copy()
+
+# Save the cleaned DataFrame to CSV
+final_df.to_csv(data_file_path, index=False)
+
+# Generate metadata.txt
+with open(metadata_file_path, "w") as f:
+    f.write(f"Data File Path: {data_file_path}\n\n")
+    f.write("--- df.info() ---\n")
+    # Redirect df.info() output to a string
+    buffer = io.StringIO()
+    final_df.info(buf=buffer)
+    f.write(buffer.getvalue())
+    f.write("\n\n--- Column Names ---\n")
+    f.write(", ".join(final_df.columns) + "\n\n")
+    f.write("--- df.head() ---\n")
+    f.write(final_df.head().to_string() + "\n\n")
+    f.write("--- Notes ---\n")
+    f.write(
+        "The original Wikipedia table does not contain a column explicitly named 'Peak'.\n"
+    )
+    f.write("For the purpose of answering the user's questions regarding 'Peak',\n")
+    f.write("the 'Worldwide_gross' column has been used as an equivalent for 'Peak',\n")
+    f.write("as it represents the maximum grossing value for each film.\n\n")
+    f.write("ANSWER_FORMAT: JSON\n")
+    f.write("[")
+    f.write('\n  "Answer to Q1",')
+    f.write('\n  "Answer to Q2",')
+    f.write('\n  "Answer to Q3",')
+    f.write('\n  "Answer to Q4 (base64 image data URI)"\n')
+    f.write("]\n")
+
+----------------------------------------
+
+[2025-08-13 20:16:36]
+❌ Error during code execution:
+Traceback (most recent call last):
+  File "/home/varshitha/TDS_project2/task_engine.py", line 48, in run_python_code
+    execute_code()
+  File "/home/varshitha/TDS_project2/task_engine.py", line 26, in execute_code
+    exec(code, exec_globals)
+  File "<string>", line 33, in <module>
+ValueError: Could not find the expected table on the Wikipedia page.
+
+----------------------------------------
+
+[2025-08-13 20:17:06]
+📜 Executing Code:
+import pandas as pd
+import os
+
+# Define URL and paths
+url = "https://en.wikipedia.org/wiki/List_of_highest-grossing_films"
+output_dir = "uploads/a8a217cf-4169-420e-8db8-48a10a25e4ba"
+data_path = os.path.join(output_dir, "data.csv")
+metadata_path = os.path.join(output_dir, "metadata.txt")
+
+# Create output directory if it doesn't exist
+os.makedirs(output_dir, exist_ok=True)
+
+# Scrape the tables
+tables = pd.read_html(url)
+df = None
+# Iterate through tables to find the one with 'Film', 'Worldwide gross ($)', 'Year', 'Rank', 'Peak'
+expected_columns_subset = ["Film", "Worldwide gross ($)", "Year", "Rank", "Peak"]
+
+for table in tables:
+    # Normalize column names by stripping whitespace and replacing non-breaking spaces
+    original_cols = table.columns
+    normalized_cols = [
+        c.replace("\xa0", " ").strip() if isinstance(c, str) else c
+        for c in original_cols
+    ]
+    table.columns = normalized_cols
+
+    # Check if all expected columns (or their normalized versions) are present
+    if all(col in table.columns for col in expected_columns_subset):
+        df = table
+        break
+
+if df is None:
+    raise ValueError(
+        "Could not find the expected table on the Wikipedia page with columns 'Film', 'Worldwide gross ($)', 'Year', 'Rank', 'Peak'."
+    )
+
+# --- Data Cleaning ---
+
+# Clean 'Worldwide gross ($)' column: remove currency symbols, commas, references, convert to numeric (in dollars)
+if "Worldwide gross ($)" in df.columns:
+    df["Worldwide gross"] = (
+        df["Worldwide gross ($)"]
+        .astype(str)
+        .str.replace("$", "", regex=False)
+        .str.replace(",", "", regex=False)
+    )
+    df["Worldwide gross"] = (
+        df["Worldwide gross"].str.replace(r"\[\d+\]", "", regex=True).str.strip()
+    )
+    # Handle ranges like "1.1–1.2" by taking the first value. Convert to float.
+    df["Worldwide gross"] = df["Worldwide gross"].apply(
+        lambda x: (
+            float(x.split("–")[0].split("-")[0]) if isinstance(x, str) and x else None
+        )
+    )
+    # Drop the original column
+    df.drop(columns=["Worldwide gross ($)"], inplace=True)
+elif "Worldwide gross" in df.columns:  # Fallback if name is already simplified
+    df["Worldwide gross"] = (
+        df["Worldwide gross"]
+        .astype(str)
+        .str.replace("$", "", regex=False)
+        .str.replace(",", "", regex=False)
+    )
+    df["Worldwide gross"] = (
+        df["Worldwide gross"].str.replace(r"\[\d+\]", "", regex=True).str.strip()
+    )
+    df["Worldwide gross"] = df["Worldwide gross"].apply(
+        lambda x: (
+            float(x.split("–")[0].split("-")[0]) if isinstance(x, str) and x else None
+        )
+    )
+
+
+# Clean 'Year' column: extract 4-digit year and convert to numeric
+if "Year" in df.columns:
+    # Extract the first 4-digit number (year) from the string, then convert to numeric
+    df["Year"] = pd.to_numeric(
+        df["Year"].astype(str).str.extract(r"(\d{4})")[0], errors="coerce"
+    )
+
+# Convert 'Rank' and 'Peak' to numeric
+if "Rank" in df.columns:
+    df["Rank"] = pd.to_numeric(
+        df["Rank"].astype(str).str.replace(r"\[\d+\]", "", regex=True), errors="coerce"
+    )
+
+if "Peak" in df.columns:
+    df["Peak"] = pd.to_numeric(
+        df["Peak"].astype(str).str.replace(r"\[\d+\]", "", regex=True), errors="coerce"
+    )
+
+
+# Save the DataFrame to CSV
+df.to_csv(data_path, index=False)
+
+# Generate metadata
+with open(metadata_path, "w") as f:
+    f.write(f"Data file path: {data_path}\n")
+    f.write(f"Description: Highest-grossing films data from Wikipedia\n\n")
+    f.write("df.info():\n")
+    df.info(buf=f)
+    f.write("\nColumn Names:\n")
+    f.write(", ".join(df.columns.tolist()))
+    f.write("\n\nFirst few rows (df.head()):\n")
+    f.write(df.head().to_string())
+    f.write("\n\nANSWER_FORMAT: JSON array of strings")
+
+----------------------------------------
+
+[2025-08-13 20:17:07]
+❌ Error during code execution:
+Traceback (most recent call last):
+  File "/home/varshitha/TDS_project2/task_engine.py", line 48, in run_python_code
+    execute_code()
+  File "/home/varshitha/TDS_project2/task_engine.py", line 26, in execute_code
+    exec(code, exec_globals)
+  File "<string>", line 31, in <module>
+ValueError: Could not find the expected table on the Wikipedia page with columns 'Film', 'Worldwide gross ($)', 'Year', 'Rank', 'Peak'.
+
+----------------------------------------
+
+[2025-08-13 20:17:19]
+📜 Executing Code:
+import pandas as pd
+import os
+import io
+
+# Define output directory and file paths
+output_dir = "uploads/a8a217cf-4169-420e-8db8-48a10a25e4ba"
+data_file_path = os.path.join(output_dir, "data.csv")
+metadata_file_path = os.path.join(output_dir, "metadata.txt")
+
+# Create the output directory if it does not exist
+os.makedirs(output_dir, exist_ok=True)
+
+# URL to scrape
+url = "https://en.wikipedia.org/wiki/List_of_highest-grossing_films"
+
+# Required columns as specified in the error message for table identification
+required_columns = ["Film", "Worldwide gross ($)", "Year", "Rank", "Peak"]
+
+df_found = None
+
+try:
+    # Read all tables from the Wikipedia page
+    dfs = pd.read_html(url)
+
+    # Iterate through the tables to find the one with all required columns
+    for df in dfs:
+        # Normalize column names to check for required_columns
+        # Remove any leading/trailing spaces or special characters for robust matching if necessary
+        # For now, stick to exact match based on the error message.
+        if all(col in df.columns for col in required_columns):
+            df_found = df
+            break
+
+    if df_found is None:
+        raise ValueError(
+            f"Could not find the expected table on the Wikipedia page with columns {required_columns}."
+        )
+
+    # Save the identified DataFrame to CSV
+    df_found.to_csv(data_file_path, index=False)
+
+    # Generate metadata.txt
+    with open(metadata_file_path, "w") as f:
+        f.write(f"Data File Path: {data_file_path}\n\n")
+
+        f.write("df.info() output:\n")
+        buffer = io.StringIO()
+        df_found.info(buf=buffer)
+        f.write(buffer.getvalue())
+        f.write("\n")
+
+        f.write("Column Names:\n")
+        f.write(str(df_found.columns.tolist()))
+        f.write("\n\n")
+
+        f.write("df.head() output:\n")
+        f.write(df_found.head().to_string())
+        f.write("\n\n")
+
+        f.write("ANSWER_FORMAT: JSON")
+
+except Exception as e:
+    # Log the error if necessary or print for debugging
+    print(f"An error occurred during data collection: {e}")
+    raise
+
+----------------------------------------
+
+[2025-08-13 20:17:21]
+❌ Error during code execution:
+Traceback (most recent call last):
+  File "/home/varshitha/TDS_project2/task_engine.py", line 48, in run_python_code
+    execute_code()
+  File "/home/varshitha/TDS_project2/task_engine.py", line 26, in execute_code
+    exec(code, exec_globals)
+  File "<string>", line 35, in <module>
+ValueError: Could not find the expected table on the Wikipedia page with columns ['Film', 'Worldwide gross ($)', 'Year', 'Rank', 'Peak'].
+
+----------------------------------------
+
+[2025-08-13 20:17:56]
+📜 Executing Code:
+import pandas as pd
+import os
+import io
+
+# Define paths
+output_dir = "uploads/a8a217cf-4169-420e-8db8-48a10a25e4ba"
+data_file_path = os.path.join(output_dir, "data.csv")
+metadata_file_path = os.path.join(output_dir, "metadata.txt")
+
+# Create the output directory if it doesn't exist
+os.makedirs(output_dir, exist_ok=True)
+
+# URL of the Wikipedia page
+url = "https://en.wikipedia.org/wiki/List_of_highest-grossing_films"
+
+# Expected columns to identify the correct table
+expected_columns = ["Film", "Worldwide gross ($)", "Year", "Rank", "Peak"]
+
+try:
+    # Read all tables from the Wikipedia page
+    tables = pd.read_html(url)
+except Exception as e:
+    raise RuntimeError(f"Failed to read HTML from {url}: {e}")
+
+# Find the table that contains all expected columns
+df = None
+for table in tables:
+    # Normalize column names for robust matching (remove extra spaces, footnotes etc.)
+    normalized_table_columns = [col.split("[")[0].strip() for col in table.columns]
+
+    # Check if all expected columns are present in the table's normalized columns
+    if set(expected_columns).issubset(set(normalized_table_columns)):
+        df = table
+        break
+
+if df is None:
+    raise ValueError(
+        f"Could not find the expected table on the Wikipedia page with columns {expected_columns}."
+    )
+
+# Standardize column names (remove footnotes from original names)
+df.columns = [col.split("[")[0].strip() for col in df.columns]
+
+# Data cleaning
+# 'Worldwide gross ($)' column: remove '$', commas, 'approx.', convert to numeric
+if "Worldwide gross ($)" in df.columns:
+    df["Worldwide gross ($)"] = (
+        df["Worldwide gross ($)"]
+        .astype(str)
+        .str.replace("$", "", regex=False)
+        .str.replace(",", "", regex=False)
+        .str.replace("approx\.", "", regex=True)
+        .str.strip()
+    )
+    # Handle ranges like "1,000–1,100" by taking the first number, or empty strings
+    df["Worldwide gross ($)"] = df["Worldwide gross ($)"].apply(
+        lambda x: x.split("–")[0] if "–" in x else x
+    )
+    df["Worldwide gross ($)"] = pd.to_numeric(
+        df["Worldwide gross ($)"], errors="coerce"
+    )
+    # Convert from millions of dollars to absolute dollars (e.g., 2923.7 million -> 2,923,700,000)
+    df["Worldwide gross ($)"] = df["Worldwide gross ($)"] * 1_000_000
+
+# 'Year' column: convert to numeric, handling potential footnotes/ranges
+if "Year" in df.columns:
+    df["Year"] = df["Year"].astype(str).str.split("[").str[0].str.strip()
+    df["Year"] = pd.to_numeric(df["Year"], errors="coerce")
+
+# 'Rank' column: convert to numeric
+if "Rank" in df.columns:
+    df["Rank"] = df["Rank"].astype(str).str.split("[").str[0].str.strip()
+    df["Rank"] = df["Rank"].replace("—", pd.NA)
+    df["Rank"] = pd.to_numeric(df["Rank"], errors="coerce")
+
+# 'Peak' column: convert to numeric
+if "Peak" in df.columns:
+    df["Peak"] = df["Peak"].astype(str).str.split("[").str[0].str.strip()
+    df["Peak"] = df["Peak"].replace("—", pd.NA)
+    df["Peak"] = pd.to_numeric(df["Peak"], errors="coerce")
+
+# Select only the relevant columns to save, and ensure their order
+final_df = df[expected_columns].copy()
+
+# Save the DataFrame to CSV
+final_df.to_csv(data_file_path, index=False)
+
+# Generate metadata
+with open(metadata_file_path, "w") as f:
+    f.write(f"Data File Path: {data_file_path}\n")
+    f.write("Short Description: Highest-grossing films from Wikipedia.\n\n")
+
+    # Capture df.info() output
+    buffer = io.StringIO()
+    final_df.info(buf=buffer)
+    f.write("DataFrame Info:\n")
+    f.write(buffer.getvalue())
+    f.write("\n")
+
+    f.write("Column Names:\n")
+    for col in final_df.columns:
+        f.write(f"- {col}\n")
+    f.write("\n")
+
+    f.write("First Few Rows (df.head()):\n")
+    f.write(final_df.head().to_string())
+    f.write("\n\n")
+
+    f.write("ANSWER_FORMAT: JSON array of strings containing the answer.\n")
+
+----------------------------------------
+
+[2025-08-13 20:17:58]
+❌ Error during code execution:
+Traceback (most recent call last):
+  File "/home/varshitha/TDS_project2/task_engine.py", line 48, in run_python_code
+    execute_code()
+  File "/home/varshitha/TDS_project2/task_engine.py", line 26, in execute_code
+    exec(code, exec_globals)
+  File "<string>", line 29, in <module>
+AttributeError: 'int' object has no attribute 'split'
+
+----------------------------------------

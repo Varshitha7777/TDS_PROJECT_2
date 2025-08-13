@@ -1,0 +1,13 @@
+{
+    "code": "import pandas as pd\nimport os\nimport io\n\n# Define the output directory and file paths\noutput_dir = \"uploads/66a329ca-c6dd-4f9d-9ffb-4d0463b00b1b\"\ndata_path = os.path.join(output_dir, \"data.csv\")\nmetadata_path = os.path.join(output_dir, \"metadata.txt\")\n\n# Create the output directory if it does not exist\nos.makedirs(output_dir, exist_ok=True)\n\n# URL of the Wikipedia page\nurl = \"https://en.wikipedia.org/wiki/List_of_highest-grossing_films\"\n\n# Read HTML tables from the URL\n# The first table on the page is typically the list of highest-grossing films\n# This will handle the multi-level headers for 'Worldwide gross' by flattening them (e.g., 'Worldwide gross', 'Worldwide gross.1').\ntables = pd.read_html(url)\ndf = tables[0]\n\n# Save the DataFrame to a CSV file\ndf.to_csv(data_path, index=False)\n\n# Generate metadata.txt\nwith open(metadata_path, \"w\") as f:\n    f.write(\"--- DataFrame Info ---\\n\")\n    # Redirect df.info() output to a string\n    buffer = io.StringIO()\n    df.info(buf=buffer)\n    f.write(buffer.getvalue())\n    f.write(\"\\n\\n--- Column Names ---\\n\")\n    f.write(str(df.columns.tolist()))\n    f.write(\"\\n\\n--- First Few Rows ---\\n\")\n    f.write(df.head().to_string())\n    f.write(f\"\\n\\n--- Path to Data File ---\\n\")\n    f.write(data_path)\n    f.write(\"\\n\\nANSWER_FORMAT: JSON array of strings containing the answer.\")\n",
+    "libraries": [
+        "pandas"
+    ],
+    "questions": [
+        "How many $2 bn movies were released before 2000?",
+        "Which is the earliest film that grossed over $1.5 bn?",
+        "What's the correlation between the Rank and Peak?",
+        "Draw a scatterplot of Rank and Peak along with a dotted red regression line through it. Return as a base-64 encoded data URI, \"data:image/png;base64,iVBORw0...\" under 100,000 bytes."
+    ],
+    "comment": "Step-3: Getting scrap code and metadata from llm. Tries count = %d 0"
+}

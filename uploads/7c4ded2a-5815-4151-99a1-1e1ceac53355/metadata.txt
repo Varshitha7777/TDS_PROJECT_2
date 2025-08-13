@@ -1,0 +1,28 @@
+Data File Path: uploads/7c4ded2a-5815-4151-99a1-1e1ceac53355/data.csv
+
+df.info():
+<class 'pandas.core.frame.DataFrame'>
+Index: 45 entries, 0 to 49
+Data columns (total 4 columns):
+ #   Column           Non-Null Count  Dtype  
+---  ------           --------------  -----  
+ 0   Rank             45 non-null     int64  
+ 1   Peak             41 non-null     float64
+ 2   Worldwide gross  45 non-null     float64
+ 3   Year             45 non-null     int64  
+dtypes: float64(2), int64(2)
+memory usage: 1.8 KB
+
+
+Column Names:
+['Rank', 'Peak', 'Worldwide gross', 'Year']
+
+First few rows (df.head()):
+   Rank  Peak  Worldwide gross  Year
+0     1   1.0     2.923706e+09  2009
+1     2   1.0     2.797501e+09  2019
+2     3   3.0     2.320250e+09  2022
+4     5   5.0     2.212300e+09  2025
+5     6   3.0     2.068224e+09  2015
+
+ANSWER_FORMAT: JSON

@@ -1,0 +1,16 @@
+{
+    "code": "import pandas as pd\nimport os\n\n# Define the base upload directory\nupload_dir = 'uploads/ef3885f2-27d0-4069-99aa-ad4af888bc00'\n\n# Create the directory if it doesn't exist\nos.makedirs(upload_dir, exist_ok=True)\n\n# Path to the source CSV file\nsource_csv_path = os.path.join(upload_dir, 'sample-sales.csv')\n\n# Path to save the processed data\ndata_output_path = os.path.join(upload_dir, 'data.csv')\n\n# Load the CSV file into a pandas DataFrame\ndf = pd.read_csv(source_csv_path)\n\n# Save the dataset to the specified output path\ndf.to_csv(data_output_path, index=False)\n\n# Generate metadata\nmetadata_path = os.path.join(upload_dir, 'metadata.txt')\nwith open(metadata_path, 'w') as f:\n    f.write(f\"Path to data file: {data_output_path}\\n\\n\")\n    f.write(\"df.info() output:\\n\")\n    df.info(buf=f)\n    f.write(\"\\nColumn names:\\n\")\n    f.write(str(df.columns.tolist()))\n    f.write(\"\\n\\nFirst few rows (df.head()):\\n\")\n    f.write(df.head().to_string())\n    f.write(\"\\n\\nANSWER_FORMAT:\\n\")\n    f.write(\"{\\n  \\\"total_sales\\\": number,\\n  \\\"top_region\\\": string,\\n  \\\"day_sales_correlation\\\": number,\\n  \\\"bar_chart\\\": base64 PNG string under 100kB,\\n  \\\"median_sales\\\": number,\\n  \\\"total_sales_tax\\\": number,\\n  \\\"cumulative_sales_chart\\\": base64 PNG string under 100kB\\n}\")",
+    "libraries": [
+        "pandas"
+    ],
+    "questions": [
+        "What is the total sales across all regions?",
+        "Which region has the highest total sales?",
+        "What is the correlation between day of month and sales? (Use the date column.)",
+        "Plot total sales by region as a bar chart with blue bars. Encode as base64 PNG.",
+        "What is the median sales amount across all orders?",
+        "What is the total sales tax if the tax rate is 10%?",
+        "Plot cumulative sales over time as a line chart with a red line. Encode as base64 PNG."
+    ],
+    "comment": "Step-3: Getting scrap code and metadata from llm. Tries count = %d 0"
+}
